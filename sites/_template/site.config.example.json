@@ -1,0 +1,36 @@
+{
+  "id": "_template",
+  "displayName": "Example Site (copy this directory to sites/<your-site-id>/)",
+  "baseUrl": "https://example.com/login",
+  "ruleSpecDir": "rule-spec",
+  "outputDir": ".golden-master",
+  "crawl": {
+    "maxDepth": 3,
+    "maxPages": 30,
+    "maxCasesPerForm": 25,
+    "normalOnlyPairwise": false,
+    "dryRun": false,
+    "headful": false,
+    "fastFail": true,
+    "successCheckpoint": "url:/thank-you"
+  },
+  "login": {
+    "loginUrl": "https://example.com/login",
+    "usernameSelector": "input[name=\"username\"]",
+    "passwordSelector": "input[name=\"password\"]",
+    "submitSelector": "button[type=\"submit\"]"
+  },
+  "basicAuth": {
+    "enabled": false
+  },
+  "scenarioExpansion": [
+    {
+      "urlPattern": "/example/join",
+      "triggerSelector": "#hasCompanion",
+      "templates": [
+        { "name": "scenario: alone", "overrides": { "#hasCompanion": "off" } },
+        { "name": "scenario: with 1 companion", "overrides": { "#hasCompanion": "on", "#companionCount": "1" } }
+      ]
+    }
+  ]
+}

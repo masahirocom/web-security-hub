@@ -1,0 +1,3 @@
+'use strict';
+import { api } from '../api.js'; import { $ } from '../dom.js'; import { renderFindings } from './renderFindings.js';
+export function wireStaticScan() { $('runStatic').addEventListener('click', async () => { const status = $('staticStatus'); const result = $('staticResult'); status.textContent = '解析中…'; result.innerHTML = ''; try { const data = await api('/security/static-scan', { sourceDir: $('sourceDir').value.trim() }); status.textContent = `完了: ${data.filesScanned} ファイルを確認`; result.innerHTML = renderFindings(data, data.scannedAt); } catch (error) { status.textContent = `エラー: ${error.message}`; } }); }

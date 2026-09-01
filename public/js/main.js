@@ -1,0 +1,11 @@
+import './siteManager.js';
+import './pipeline.js';
+import './replay.js';
+import './caseEditor.js';
+import './securityApp.js';
+import { refreshSiteList } from './siteManager.js';
+import { $ } from './dom.js';
+document.querySelectorAll('nav.tabs button[data-tab]').forEach((button) => button.addEventListener('click', () => { document.querySelectorAll('nav.tabs button[data-tab]').forEach((b) => b.classList.toggle('active', b === button)); document.querySelectorAll('main .panel').forEach((p) => p.classList.toggle('active', p.id === `panel-${button.dataset.tab}`)); if (button.dataset.tab === 'replay') import('./replay.js').then(({ loadReplaySessions }) => loadReplaySessions()); }));
+$('settingsBtn').addEventListener('click', async () => { $('settingsModal').hidden = false; const r = await fetch('/api/system-info'); $('systemInfoBody').textContent = JSON.stringify(await r.json(), null, 2); });
+$('closeSettingsBtn').addEventListener('click', () => { $('settingsModal').hidden = true; });
+refreshSiteList().catch(() => {});

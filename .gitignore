@@ -1,0 +1,12 @@
+node_modules/
+artifacts/
+.cora/
+.DS_Store
+.env
+.env.*
+!.env.example
+sites/*/.env
+sites/*/.golden-master/
+sites/*/fixtures/
+!sites/_template/
+!sites/_template/**

@@ -1,0 +1,22 @@
+{
+  "name": "web-security-hub",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Web Security Hub — OWASP-aligned dynamic web scanning and local static analysis.",
+  "engines": {
+    "node": ">=22"
+  },
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "postinstall": "playwright install chromium || true",
+    "dynamic-scan": "node core/cli/securityScan.js",
+    "autoflow": "node core/cli/autoflow.js",
+    "replay": "node core/cli/replay.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "playwright": "^1.46.0",
+    "yaml": "^2.5.0"
+  }
+}

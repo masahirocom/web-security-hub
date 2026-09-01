@@ -1,0 +1,155 @@
+'use strict';
+const fs = require('fs');
+const path = require('path');
+
+const SITES_DIR = path.join(__dirname, '..', 'sites');
+
+function sitesDir() {
+  return SITES_DIR;
+}
+
+function siteDir(siteId) {
+  if (!/^[a-zA-Z0-9_-]+$/.test(siteId)) throw new Error(`invalid site id: ${siteId}`);
+  return path.join(SITES_DIR, siteId);
+}
+
+function listSites() {
+  if (!fs.existsSync(SITES_DIR)) return [];
+  return fs
+    .readdirSync(SITES_DIR, { withFileTypes: true })
+    .filter((e) => e.isDirectory() && e.name !== '_template')
+    .map((e) => e.name)
+    .filter((id) => fs.existsSync(path.join(SITES_DIR, id, 'site.config.json')));
+}
+
+function readSiteConfig(siteId) {
+  const file = path.join(siteDir(siteId), 'site.config.json');
+  if (!fs.existsSync(file)) throw new Error(`site not found: ${siteId}`);
+  return JSON.parse(fs.readFileSync(file, 'utf8'));
+}
+
+/**
+ * Recursively merges `incoming` onto `base`, keyed field by field, so that a
+ * partial update (e.g. from a UI form that only knows about a subset of
+ * site.config.json's fields) doesn't silently erase fields it doesn't know
+ * about (manualFormsPath, scenarioExpansion, crawl.dryRun, etc.).
+ */
+function mergeSiteConfig(base, incoming) {
+  if (incoming === null || typeof incoming !== 'object' || Array.isArray(incoming)) return incoming;
+  const out = { ...base };
+  for (const [key, value] of Object.entries(incoming)) {
+    const baseValue = base?.[key];
+    const bothPlainObjects =
+      value && typeof value === 'object' && !Array.isArray(value) && baseValue && typeof baseValue === 'object' && !Array.isArray(baseValue);
+    out[key] = bothPlainObjects ? mergeSiteConfig(baseValue, value) : value;
+  }
+  return out;
+}
+
+function writeSiteConfig(siteId, config) {
+  const dir = siteDir(siteId);
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, 'site.config.json'), JSON.stringify({ ...config, id: siteId }, null, 2) + '\n', 'utf8');
+}
+
+/** Parses a simple KEY=VALUE .env file (no external dependency). */
+function readEnvFile(siteId) {
+  const file = path.join(siteDir(siteId), '.env');
+  if (!fs.existsSync(file)) return {};
+  const out = {};
+  for (const line of fs.readFileSync(file, 'utf8').split(/\r?\n/)) {
+    const s = line.trim();
+    if (!s || s.startsWith('#')) continue;
+    const idx = s.indexOf('=');
+    if (idx <= 0) continue;
+    let value = s.slice(idx + 1).trim();
+    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+      value = value.slice(1, -1);
+    }
+    out[s.slice(0, idx).trim()] = value;
+  }
+  return out;
+}
+
+/** Merges given keys into the site's .env file, preserving any keys not being updated. */
+function writeEnvFile(siteId, updates) {
+  const dir = siteDir(siteId);
+  fs.mkdirSync(dir, { recursive: true });
+  const current = readEnvFile(siteId);
+  const merged = { ...current, ...updates };
+  const body =
+    Object.entries(merged)
+      .filter(([, v]) => v !== undefined && v !== null)
+      .map(([k, v]) => `${k}=${String(v)}`)
+      .join('\n') + '\n';
+  fs.writeFileSync(path.join(dir, '.env'), body, 'utf8');
+}
+
+function toBool(v, fallback) {
+  if (v === undefined || v === null) return fallback;
+  return /^(1|true|yes|on)$/i.test(String(v));
+}
+
+/**
+ * Builds a RunnerConfig (see core/runner/formRunner.js) from a site's
+ * site.config.json + .env, resolving all relative paths to absolute ones.
+ */
+function buildRunnerConfig(siteId) {
+  const cfg = readSiteConfig(siteId);
+  const env = readEnvFile(siteId);
+  const dir = siteDir(siteId);
+  const crawl = cfg.crawl || {};
+
+  const login = cfg.login?.loginUrl || env.LOGIN_USER
+    ? {
+        loginUrl: cfg.login?.loginUrl,
+        username: env.LOGIN_USER || '',
+        password: env.LOGIN_PASS || '',
+        usernameSelector: cfg.login?.usernameSelector,
+        passwordSelector: cfg.login?.passwordSelector,
+        submitSelector: cfg.login?.submitSelector,
+      }
+    : undefined;
+
+  const httpCredentials = cfg.basicAuth?.enabled
+    ? { username: env.BASIC_USER || '', password: env.BASIC_PASS || '' }
+    : undefined;
+
+  const outputDir = path.resolve(dir, cfg.outputDir || '.golden-master');
+  const ruleSpecDir = path.resolve(dir, cfg.ruleSpecDir || 'rule-spec');
+  const manualFormsPath = cfg.manualFormsPath ? path.resolve(dir, cfg.manualFormsPath) : undefined;
+  const sessionId = `session-${new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14)}`;
+
+  return {
+    runnerConfig: {
+      url: cfg.baseUrl,
+      headful: toBool(crawl.headful, false),
+      dryRun: toBool(crawl.dryRun, false),
+      maxCasesPerForm: crawl.maxCasesPerForm ?? 25,
+      normalOnlyPairwise: toBool(crawl.normalOnlyPairwise, false),
+      fastFail: toBool(crawl.fastFail, true),
+      maxDepth: crawl.maxDepth ?? 3,
+      maxPages: crawl.maxPages ?? 30,
+      outputDir: path.join(outputDir, sessionId),
+      ruleSpecDir,
+      manualFormsPath,
+      httpCredentials,
+      login,
+      scenarioExpansion: cfg.scenarioExpansion || [],
+    },
+    outputBaseDir: outputDir,
+    sessionId,
+  };
+}
+
+module.exports = {
+  sitesDir,
+  siteDir,
+  listSites,
+  readSiteConfig,
+  writeSiteConfig,
+  mergeSiteConfig,
+  readEnvFile,
+  writeEnvFile,
+  buildRunnerConfig,
+};

@@ -1,0 +1,8 @@
+services:
+  zap:
+    image: ghcr.io/zaproxy/zaproxy:stable
+    command: zap.sh -daemon -host 0.0.0.0 -port 8080 -config api.disablekey=true
+    ports:
+      - "127.0.0.1:8090:8080"
+    # API key is disabled only because this port is bound to localhost.
+    # For a shared host, bind to a private network and configure api.key instead.

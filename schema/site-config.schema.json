@@ -1,0 +1,112 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cross-c/golden-master-webapp/site-config-0.1.json",
+  "title": "Golden Master Webapp Site Config v0.1",
+  "description": "Non-secret configuration for one target site. Secrets (Basic-Auth / app-login credentials) live in a sibling .env file, never in this file.",
+  "type": "object",
+  "required": ["id", "displayName", "baseUrl"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "URL-safe unique identifier, matches the sites/<id> directory name.",
+      "pattern": "^[a-zA-Z0-9_-]+$"
+    },
+    "displayName": {
+      "type": "string",
+      "description": "Human-readable name shown in the UI."
+    },
+    "baseUrl": {
+      "type": "string",
+      "description": "Seed URL the crawler starts from.",
+      "format": "uri"
+    },
+    "ruleSpecDir": {
+      "type": "string",
+      "description": "Path (relative to this site's directory) holding Rule Spec YAML/JSON files.",
+      "default": "rule-spec"
+    },
+    "manualFormsPath": {
+      "type": "string",
+      "description": "Path (relative to this site's directory) to a hand-authored forms.json-shaped file (array of ScannedForm objects, each optionally with a `preSteps` array). When set, this replaces the crawler's live form detection as the source of form definitions fed into semantic inference / pairwise generation / codegen — use this for pages where fields only appear after a wizard-style interaction (e.g. selecting a radio button) that the generic crawler can't discover on its own."
+    },
+    "outputDir": {
+      "type": "string",
+      "description": "Path (relative to this site's directory) where crawl/test-case sessions are written.",
+      "default": ".golden-master"
+    },
+    "crawl": {
+      "type": "object",
+      "properties": {
+        "maxDepth": { "type": "integer", "minimum": 0, "default": 3 },
+        "maxPages": { "type": "integer", "minimum": 1, "default": 30 },
+        "maxCasesPerForm": { "type": "integer", "minimum": 1, "default": 25 },
+        "normalOnlyPairwise": { "type": "boolean", "default": false },
+        "dryRun": { "type": "boolean", "default": false },
+        "headful": { "type": "boolean", "default": false },
+        "fastFail": { "type": "boolean", "default": true },
+        "successCheckpoint": {
+          "type": "string",
+          "description": "url:/selector:/text: prefixed string marking success without needing an error-free page."
+        }
+      },
+      "additionalProperties": false
+    },
+    "login": {
+      "type": "object",
+      "description": "Non-secret application-login hints. Credentials go in .env as LOGIN_USER / LOGIN_PASS.",
+      "properties": {
+        "loginUrl": { "type": "string", "format": "uri" },
+        "usernameSelector": { "type": "string" },
+        "passwordSelector": { "type": "string" },
+        "submitSelector": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "basicAuth": {
+      "type": "object",
+      "description": "Flags that Basic-Auth is used. Credentials go in .env as BASIC_USER / BASIC_PASS.",
+      "properties": {
+        "enabled": { "type": "boolean", "default": false }
+      },
+      "additionalProperties": false
+    },
+    "scenarioExpansion": {
+      "type": "array",
+      "description": "Declarative, site-config-driven test-case expansion. Generalizes the idea of 'when this URL and trigger selector are both present, synthesize N extra scenario test cases from templates' without any hardcoded per-site logic in the runner.",
+      "items": {
+        "type": "object",
+        "required": ["urlPattern", "triggerSelector", "templates"],
+        "properties": {
+          "urlPattern": {
+            "type": "string",
+            "description": "Regex (string form) matched against the scanned form's URL."
+          },
+          "triggerSelector": {
+            "type": "string",
+            "description": "CSS selector that must exist among the scanned form's fields for this expansion to apply."
+          },
+          "templates": {
+            "type": "array",
+            "description": "Each template describes one extra generated test case as a set of selector -> value overrides applied on top of the form's normal-value baseline.",
+            "items": {
+              "type": "object",
+              "required": ["name", "overrides"],
+              "properties": {
+                "name": { "type": "string" },
+                "overrides": {
+                  "type": "object",
+                  "description": "selector -> literal value string to assign for this template.",
+                  "additionalProperties": { "type": "string" }
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "default": []
+    }
+  },
+  "additionalProperties": false
+}

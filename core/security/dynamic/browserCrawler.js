@@ -1,0 +1,11 @@
+'use strict';
+const { finding } = require('../owasp');
+function normalizeUrl(url) { const parsed = new URL(url); parsed.hash = ''; return parsed.toString(); }
+function clamp(value, min, max, fallback) { const n = Number(value); return Number.isFinite(n) ? Math.min(Math.max(n, min), max) : fallback; }
+async function crawl({ context, targetUrl, maxPages, maxDepth, collector, scenario, analyzePage, onProgress = () => {} }) {
+  const target = new URL(targetUrl); const findings = []; const pages = []; const seen = new Set(); const queue = [{ url: normalizeUrl(targetUrl), depth: 0 }];
+  if (scenario?.steps?.length || scenario?.login?.url) { const page = await context.newPage(); collector.attach(page); await scenario.run(page, targetUrl, scenario, onProgress); queue.unshift({ url: normalizeUrl(page.url()), depth: 0 }); await page.close(); }
+  while (queue.length && pages.length < clamp(maxPages, 1, 100, 20)) { const { url, depth } = queue.shift(); if (seen.has(url)) continue; seen.add(url); const page = await context.newPage(); collector.attach(page); try { onProgress(`巡回中 (${pages.length + 1}/${maxPages}): ${url}`); const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30_000 }); await page.waitForLoadState('networkidle', { timeout: 3_000 }).catch(() => {}); const landed = normalizeUrl(page.url()); pages.push({ url: landed, status: response?.status() || 0, title: await page.title().catch(() => '') }); findings.push(...await analyzePage({ page, url: landed, headers: response?.headers() || {} })); if (depth < maxDepth) { const links = await page.locator('a[href]').evaluateAll((els) => els.map((a) => a.href)); for (const href of links) try { const next = new URL(href); if (next.origin === target.origin && ['http:', 'https:'].includes(next.protocol)) queue.push({ url: normalizeUrl(next), depth: depth + 1 }); } catch {} } } catch (error) { findings.push(finding({ id: 'DAST-NAVIGATION', title: 'ページへ到達できません', severity: 'info', owasp: 'A05', location: url, evidence: String(error.message).slice(0, 300), remediation: '接続、TLS 証明書、認証およびスコープを確認してください。' })); } finally { await page.close().catch(() => {}); } }
+  return { pages, findings };
+}
+module.exports = { crawl };
