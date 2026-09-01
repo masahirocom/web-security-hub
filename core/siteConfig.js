@@ -111,6 +111,20 @@ function buildRunnerConfig(siteId) {
       }
     : undefined;
 
+  const scenario = {
+    login: login
+      ? {
+          url: login.loginUrl,
+          username: login.username,
+          password: login.password,
+          usernameSelector: login.usernameSelector,
+          passwordSelector: login.passwordSelector,
+          submitSelector: login.submitSelector,
+        }
+      : undefined,
+    steps: Array.isArray(cfg.scenario?.steps) ? cfg.scenario.steps : [],
+  };
+
   const httpCredentials = cfg.basicAuth?.enabled
     ? { username: env.BASIC_USER || '', password: env.BASIC_PASS || '' }
     : undefined;
@@ -135,6 +149,7 @@ function buildRunnerConfig(siteId) {
       manualFormsPath,
       httpCredentials,
       login,
+      scenario,
       scenarioExpansion: cfg.scenarioExpansion || [],
     },
     outputBaseDir: outputDir,

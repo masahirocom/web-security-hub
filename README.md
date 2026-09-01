@@ -1,4 +1,4 @@
-# Web Security Hub — English
+# Web Security Hub 
 
 [日本語の README](README.ja.md)
 

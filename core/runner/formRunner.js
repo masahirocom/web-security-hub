@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { BrowserSession } = require('../crawler/browser');
 const { crawlForForms } = require('../crawler/crawler');
+const { runScenario } = require('../security/dynamic/scenarioRunner');
 const { generatePlaywrightCode } = require('../codegen/playwright');
 const { loadRuleSpecs } = require('../spec/loader');
 const { processForm } = require('./formProcessor');
@@ -19,7 +20,13 @@ async function runFormGeneration(cfg, store, log) {
     const loaded = cfg.ruleSpecDir ? loadRuleSpecs(cfg.ruleSpecDir) : { specs: [], warnings: [] };
     loaded.warnings.forEach((w) => log(`spec warning: ${w}`));
     log(`巡回開始: depth=${cfg.maxDepth}, pages=${cfg.maxPages}`);
-    const { forms: crawled, visited, pageSnapshots } = await crawlForForms(page, cfg.url, { maxDepth: cfg.maxDepth, maxPages: cfg.maxPages, sameOriginOnly: true, login: cfg.login, screenshotDir: screenshots }, log);
+    let seedUrl = cfg.url;
+    if (cfg.scenario?.login?.url || cfg.scenario?.steps?.length) {
+      await runScenario(page, cfg.url, cfg.scenario, log);
+      seedUrl = page.url();
+      log(`シナリオ完了: ${seedUrl}`);
+    }
+    const { forms: crawled, visited, pageSnapshots } = await crawlForForms(page, seedUrl, { maxDepth: cfg.maxDepth, maxPages: cfg.maxPages, sameOriginOnly: true, login: cfg.login, screenshotDir: screenshots }, log);
     const forms = dedupeForms(loadManualForms(cfg.manualFormsPath, crawled, log));
     for (const form of forms) await store.saveForm(form);
     await store.saveUrlCatalog(buildUrlCatalog(cfg.url, visited, pageSnapshots, forms));
