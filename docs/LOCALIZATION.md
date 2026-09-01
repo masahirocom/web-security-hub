@@ -1,16 +1,18 @@
-# 多言語対応ガイド
+# Localization Guide
 
-## 対応言語
+[日本語版](ja/LOCALIZATION.md)
 
-- `ja`: 日本語（初期表示）
+## Supported languages
+
+- `ja`: Japanese (default)
 - `en`: English (US)
-- `fr`: Français
+- `fr`: French
 
-ヘッダーの言語セレクターで切り替えます。選択値はブラウザーの `localStorage` に `web-security-hub.locale` として保存され、次回起動時にも適用されます。
+Use the language selector in the header. The choice is saved as `web-security-hub.locale` in browser `localStorage` and is restored on the next visit.
 
-## 言語ファイル
+## Locale files
 
-言語ファイルは `public/i18n/<locale>.json` です。キーは画面や機能に依存しない意味単位で命名します。
+Locale files are stored in `public/i18n/<locale>.json`. Name keys by stable meaning, not by a particular screen or implementation detail.
 
 ```json
 {
@@ -19,19 +21,19 @@
 }
 ```
 
-`{message}` のようなプレースホルダーは `t('status.error', { message })` で置換します。
+Replace placeholders such as `{message}` with `t('status.error', { message })`.
 
-## 新しい言語を追加する手順
+## Add a language
 
-1. `public/i18n/en.json` をコピーし、たとえば `de.json` を作成する。
-2. すべての既存キーを翻訳する。
-3. `public/js/i18n.js` の `SUPPORTED` にロケールを追加する。
-4. `public/index.html` の `#languageSelect` に選択肢を追加する。
-5. Playwright でセレクター切替と主要タブ・ボタンを確認する。
+1. Copy `public/i18n/en.json`, for example to `de.json`.
+2. Translate every existing key.
+3. Add the locale to `SUPPORTED` in `public/js/i18n.js`.
+4. Add an option to `#languageSelect` in `public/index.html`.
+5. Verify selector switching, primary tabs, and buttons with Playwright.
 
-## 実装ルール
+## Implementation rules
 
-- 表示文言を新規追加するときは、JavaScript や HTML に固定文言を書かず、言語ファイルへキーを追加する。
-- 動的なエラー・進捗表示は `t()` を使用する。
-- API のフィールド名、セレクター、URL、JSON シナリオのキーは翻訳しない。
-- 機密情報を翻訳文やプレースホルダーに含めない。
+- When adding UI text, add a locale key rather than hard-coding text in JavaScript or HTML.
+- Use `t()` for dynamic errors and progress messages.
+- Do not translate API field names, selectors, URLs, or JSON scenario keys.
+- Never include secrets in translated text or placeholder values.

@@ -1,33 +1,35 @@
-# Web Security Hub 運用・安全管理手順
+# Operations and Security Procedure
 
-## 実行前チェックリスト
+[日本語版](ja/OPERATIONS.md)
 
-- [ ] 対象 URL、IP 範囲、実行時間帯、負荷上限について所有者の許可を得た。
-- [ ] 本番ではなく、テストデータのみのステージング環境を選んだ。
-- [ ] テスト用アカウントは最小権限で、個人情報や決済権限を持たない。
-- [ ] 削除、退会、解約、注文確定等の不可逆操作をシナリオと巡回対象から除外した。
-- [ ] ZAP アクティブ検査の Scan Policy とレート制限を確認した。
+## Pre-run checklist
 
-## 推奨実行順序
+- [ ] Obtain owner authorization for the target URL, IP range, execution window, and load limit.
+- [ ] Select a staging environment containing only test data, rather than production.
+- [ ] Use least-privilege test accounts with no personal-data or payment authority.
+- [ ] Exclude irreversible actions such as deletion, account closure, cancellation, and order confirmation from scenarios and crawl scope.
+- [ ] Review the ZAP Active Scan policy and rate limits.
 
-1. サイト管理で低いページ数・深さを指定する。
-2. テストケースを生成し、フォーム・URL カタログをレビューする。
-3. 正常系だけでベースラインを記録する。
-4. 異常・境界ケースを含む再実行を行う。
-5. ZAP プロキシ経由で再実行し、パッシブ Alert を確認する。
-6. 許可済みステージングに限り、ZAP Active Scan を実行する。
-7. Alert、ケース ID、通信、画面差分を確認してから課題として登録する。
+## Recommended execution order
 
-## 障害対応
+1. Set a low page count and crawl depth in Site Management.
+2. Generate test cases and review the form and URL catalogs.
+3. Record a baseline using only normal cases.
+4. Replay with invalid and boundary cases.
+5. Replay through the ZAP proxy and review passive alerts.
+6. Run ZAP Active Scan only against authorized staging.
+7. Verify alerts, case IDs, traffic, and visual differences before opening a finding.
 
-| 症状 | 対応 |
+## Troubleshooting
+
+| Symptom | Action |
 |---|---|
-| `EADDRINUSE: 4173` | 既存プロセスを停止するか、起動済みの `http://localhost:4173` を使用する。 |
-| ZAP 接続失敗 | `docker compose -f docker-compose.zap.yml up -d`、ポート 8090、Docker の稼働状況を確認する。 |
-| 旧セッションで ZAP 統合不可 | ケース編集画面で保存し、spec を再生成する。 |
-| 巡回漏れ | シナリオを追加し、ログイン後・モーダル・タブ・権限別の到達経路を明示する。 |
-| 誤検知 | `zap-alerts.json`、リクエスト、レスポンス、ケース ID を確認して手動検証する。 |
+| `EADDRINUSE: 4173` | Stop the existing process or use the already-running `http://localhost:4173`. |
+| ZAP connection fails | Run `docker compose -f docker-compose.zap.yml up -d`; check port 8090 and Docker. |
+| ZAP integration fails for an old session | Save it from the case editor to regenerate the spec. |
+| Pages are missed | Add scenarios that explicitly reach post-login pages, modals, tabs, and role-specific paths. |
+| False positive | Manually validate `zap-alerts.json`, the request, response, and case ID. |
 
-## 保管と削除
+## Retention and deletion
 
-セッション成果物には URL、フォーム定義、スクリーンショット、入力値、テスト結果が含まれる場合があります。組織のデータ保持方針に従ってアクセスを制限し、不要な `.golden-master/session-*` を削除してください。秘密情報を含むシナリオ JSON を共有・コミットしないでください。
+Session artifacts can contain URLs, form definitions, screenshots, input values, and test results. Restrict access according to your organization's retention policy and delete unneeded `.golden-master/session-*` directories. Do not share or commit scenario JSON that contains secrets.

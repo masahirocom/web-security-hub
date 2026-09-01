@@ -1,50 +1,52 @@
-# Web Security Hub 機能仕様書
+# Web Security Hub Functional Specification
 
-## 1. 機能一覧
+[日本語版](ja/SPECIFICATION.md)
 
-| ID | 機能 | 入力 | 出力 |
+## 1. Features
+
+| ID | Feature | Input | Output |
 |---|---|---|---|
-| F-01 | サイト管理 | サイト設定、認証情報 | `site.config.json`、`.env` |
-| F-02 | テスト生成 | サイト ID | フォーム、ケース、spec、レポート |
-| F-03 | ケース編集 | セッション、YAML編集値 | 更新 YAML、再生成 spec |
-| F-04 | 回帰再実行 | セッション、比較先 URL | Playwright結果、比較レポート |
-| F-05 | DAST | URL、範囲、シナリオ、許可確認 | DAST findings |
-| F-06 | ZAP 統合 | ZAP API/Proxy、Active Scan許可 | `zap-alerts.json` |
-| F-07 | SAST | ローカルソースディレクトリ | SAST findings |
+| F-01 | Site management | Site configuration, credentials | `site.config.json`, `.env` |
+| F-02 | Test generation | Site ID | Forms, cases, spec, reports |
+| F-03 | Case editing | Session, edited YAML values | Updated YAML, regenerated spec |
+| F-04 | Regression replay | Session, comparison URL | Playwright result, comparison report |
+| F-05 | DAST | URL, scope, scenario, authorization confirmation | DAST findings |
+| F-06 | ZAP integration | ZAP API/proxy, Active Scan authorization | `zap-alerts.json` |
+| F-07 | SAST | Local source directory | SAST findings |
 
-## 2. API 仕様
+## 2. API specification
 
-| Method | Path | 説明 |
+| Method | Path | Description |
 |---|---|---|
-| GET / PUT | `/api/sites`, `/api/sites/:id` | サイト一覧・設定更新 |
-| GET | `/api/sites/:id/pipeline/run` | テスト生成 SSE |
-| GET | `/api/sites/:id/sessions/:sessionId/replay` | 再実行 SSE |
-| GET / PUT | `/api/sites/:id/sessions/:sessionId/test-cases` | YAML ケース編集 |
+| GET / PUT | `/api/sites`, `/api/sites/:id` | List sites or update configuration |
+| GET | `/api/sites/:id/pipeline/run` | Test-generation SSE stream |
+| GET | `/api/sites/:id/sessions/:sessionId/replay` | Replay SSE stream |
+| GET / PUT | `/api/sites/:id/sessions/:sessionId/test-cases` | Edit YAML cases |
 | POST | `/api/security/dynamic-scan` | Playwright DAST |
-| POST | `/api/security/zap-status` | ZAP 到達性確認 |
+| POST | `/api/security/zap-status` | Check ZAP reachability |
 | POST | `/api/security/static-scan` | SAST |
 
-### DAST リクエスト
+### DAST request
 
-`POST /api/security/dynamic-scan` は `targetUrl` と `authorizationConfirmed: true` を必須とします。任意の `scenario`、`zap`、`allowActiveScan`、巡回上限を指定できます。
+`POST /api/security/dynamic-scan` requires `targetUrl` and `authorizationConfirmed: true`. It can also receive `scenario`, `zap`, `allowActiveScan`, and crawl limits.
 
-### 再実行時の ZAP パラメータ
+### ZAP parameters for replay
 
-`zap=1` は Playwright のプロキシを有効化します。`activeZap=1` は ZAP Active Scan を要求し、同時に `authorized=1` が必要です。
+`zap=1` enables the Playwright proxy. `activeZap=1` requests ZAP Active Scan and also requires `authorized=1`.
 
-## 3. 非機能要件
+## 3. Non-functional requirements
 
-- Node.js 22 以上で動作する。
-- UI はローカルの Express サーバーで提供する。
-- 長時間の生成・再実行は SSE で進捗を返す。
-- 巡回上限は最大 100 ページ、深さは最大 10 とする。
-- ソース解析は最大 3,000 ファイル、1ファイル 1 MiB を上限とする。
+- Requires Node.js 22 or later.
+- The UI is served by a local Express server.
+- Long-running generation and replay report progress with SSE.
+- Crawl limits are at most 100 pages and depth 10.
+- Source analysis is limited to 3,000 files and 1 MiB per file.
 
-## 4. 受入基準
+## 4. Acceptance criteria
 
-- サイトを保存し、パイプラインがフォーム・ケース・Playwright spec を出力できる。
-- YAML を編集して spec を再生成できる。
-- 同じセッションをベースライン記録・比較実行できる。
-- DAST は許可確認なしに開始できない。
-- ZAP 統合実行は `zap-alerts.json` を保存し、該当するケース ID を含められる。
-- 静的解析は対象ディレクトリ外へ書き込まない。
+- A saved site can produce forms, cases, and a Playwright spec through the pipeline.
+- Edited YAML can regenerate the spec.
+- The same session can record a baseline and run a comparison replay.
+- DAST cannot start without authorization confirmation.
+- A ZAP-integrated run saves `zap-alerts.json` and can include applicable case IDs.
+- Static analysis does not write outside the target source directory.

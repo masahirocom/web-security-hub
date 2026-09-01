@@ -1,85 +1,87 @@
-# Web Security Hub 設計書
+# Web Security Hub Architecture
 
-## 1. 構成概要
+[日本語版](ja/ARCHITECTURE.md)
+
+## 1. Overview
 
 ```text
 Browser UI (Vanilla JS)
-  ├─ サイト管理 / テストケース生成 / 再実行
-  ├─ Playwright DAST / ZAP 統合 / 静的解析
+  ├─ Site management / test-case generation / replay
+  ├─ Playwright DAST / ZAP integration / static analysis
   └─ Express REST + SSE
           │
           ▼
 Core Engine
-  ├─ crawler: Playwright によるフォーム・リンク探索
-  ├─ values + combinator: ルールベース値・ペアワイズ生成
-  ├─ codegen + replay: Playwright spec と比較実行
-  ├─ security: DAST、SAST、ZAP API クライアント
-  └─ store + report: セッション成果物とレポート
+  ├─ crawler: Playwright form and link discovery
+  ├─ values + combinator: rule-based values and pairwise generation
+  ├─ codegen + replay: Playwright spec generation and comparison runs
+  ├─ security: DAST, SAST, and the ZAP API client
+  └─ store + report: session artifacts and reports
           │
           ├─ sites/<siteId>/.golden-master/session-*/
-          └─ 任意: OWASP ZAP daemon (localhost:8090)
+          └─ Optional: OWASP ZAP daemon (localhost:8090)
 ```
 
-## 2. 責務分離（SRP）
+## 2. Separation of responsibilities (SRP)
 
-| 層 | 主なファイル | 責務 |
+| Layer | Main files | Responsibility |
 |---|---|---|
-| UI | `public/index.html`, `public/js/*` | 設定入力、SSE表示、結果への導線 |
-| HTTP API | `server/routes/*` | HTTP パラメータの変換、SSE 接続、HTTP 応答だけを担当 |
-| Application service | `server/services/*` | テスト生成・再実行というユースケースの実行と成果物作成 |
-| SSE adapter | `server/lib/sse.js` | SSE ヘッダー、イベント送信、接続終了の共通処理 |
-| テスト生成 | `core/runner`, `core/crawler`, `core/values` | 巡回、フォーム抽出、ケース・spec生成 |
-| DAST facade | `core/security/dynamicScanner.js` | 実行順序・結果集約だけを担当 |
-| DAST browser | `core/security/dynamic/browserCrawler.js` | 同一オリジン探索とページ到達記録 |
-| DAST scenario | `core/security/dynamic/scenarioRunner.js` | ログイン・明示シナリオのブラウザー操作 |
-| DAST analyzer | `core/security/dynamic/passiveAnalyzer.js` | HTTP ヘッダー、DOM、非破壊アクティブ通知の検査 |
-| DAST collector | `core/security/dynamic/requestCollector.js` | ブラウザー通信の重複排除・収集 |
-| ZAP 統合 | `core/security/zapClient.js` | ZAP JSON API、Alert取得・ケース紐付け |
-| SAST | `core/security/staticScanner.js` | ローカルテキストソースのルール検査 |
-| 永続化 | `core/store`, `core/report` | セッション JSON、YAML、HTML、Markdown |
+| UI | `public/index.html`, `public/js/*` | Configuration input, SSE display, and links to results |
+| HTTP API | `server/routes/*` | HTTP parameter conversion, SSE endpoints, and HTTP responses only |
+| Application services | `server/services/*` | Test-generation and replay use cases and their artifacts |
+| SSE adapter | `server/lib/sse.js` | Shared SSE headers, event delivery, and connection teardown |
+| Test generation | `core/runner`, `core/crawler`, `core/values` | Crawling, form extraction, and case/spec generation |
+| DAST facade | `core/security/dynamicScanner.js` | Execution ordering and result aggregation only |
+| DAST browser | `core/security/dynamic/browserCrawler.js` | Same-origin discovery and reached-page records |
+| DAST scenario | `core/security/dynamic/scenarioRunner.js` | Browser actions for login and explicit scenarios |
+| DAST analyzer | `core/security/dynamic/passiveAnalyzer.js` | HTTP-header, DOM, and non-destructive active-notice checks |
+| DAST collector | `core/security/dynamic/requestCollector.js` | Deduplication and collection of browser traffic |
+| ZAP integration | `core/security/zapClient.js` | ZAP JSON API, alert retrieval, and case correlation |
+| SAST | `core/security/staticScanner.js` | Rule checks of local text sources |
+| Persistence | `core/store`, `core/report` | Session JSON, YAML, HTML, and Markdown |
 
-### 分離ルール
+### Separation rules
 
-- Route は `core/` の詳細やファイル形式を直接操作しない。
-- ユースケースは Express の `req` / `res` を受け取らない。
-- スキャナーは画面表示・HTTP 送受信・保存を行わず、検査結果を返す。
-- UI は DOM 操作をタブ機能ごとに分け、共通の API 呼び出しと結果描画を再利用する。
+- Routes do not directly manipulate `core/` details or artifact formats.
+- Use cases do not receive Express `req` or `res` objects.
+- Scanners return findings; they do not render UI, handle HTTP, or persist data.
+- UI code separates DOM work by tab and reuses common API and result-rendering helpers.
 
-## 3. テストケース生成フロー
+## 3. Test-case generation flow
 
-1. `site.config.json` と `.env` から実行設定を構築する。
-2. Playwright で起点 URL を同一オリジン範囲で巡回する。
-3. フォーム要素、制約、安定セレクタを抽出する。
-4. ルールベースの候補値を作り、ペアワイズでケースを組み立てる。
-5. ケース、フォーム、URL カタログをセッションへ保存する。
-6. `generated.spec.ts`、YAML、HTML／Markdown レポートを出力する。
+1. Build execution settings from `site.config.json` and `.env`.
+2. Crawl from the start URL with Playwright, constrained to the same origin.
+3. Extract form controls, constraints, and stable selectors.
+4. Build rule-based candidate values and assemble pairwise cases.
+5. Save cases, forms, and the URL catalog to the session.
+6. Produce `generated.spec.ts`, YAML, and HTML/Markdown reports.
 
-Claude CLI による意味推論は設計対象外です。値生成は HTML 属性・フィールド型・ラベル等の決定的ルールで行います。
+Claude CLI semantic inference is intentionally out of scope. Values are generated deterministically from HTML attributes, field types, and labels.
 
-## 4. DAST / ZAP 統合フロー
+## 4. DAST and ZAP integration flow
 
 ```text
 generated.spec.ts
-  └─ WEB_SECURITY_PROXY_URL がある場合は Playwright proxy を設定
-      └─ ケースごとに X-Web-Security-Case-Id を付加
-          └─ ZAP が通信を履歴化・パッシブ検査
-              ├─ 任意で Active Scan を開始
-              └─ Alert と履歴ヘッダーを URL 単位で照合
-                  └─ zap-alerts.json (Alert + testCaseIds)
+  └─ Configure a Playwright proxy when WEB_SECURITY_PROXY_URL is present
+      └─ Add X-Web-Security-Case-Id for each case
+          └─ ZAP records traffic and runs passive checks
+              ├─ Optionally starts an Active Scan
+              └─ Matches alerts and history headers by URL
+                  └─ zap-alerts.json (alert + testCaseIds)
 ```
 
-ZAP Alert は CWE/WASC を返すため、単一の OWASP Top 10 カテゴリへ機械的には割り当てません。`UNMAPPED` は人による確認が必要であることを表します。
+ZAP alerts contain CWE/WASC data, so they are not mechanically mapped to one OWASP Top 10 category. `UNMAPPED` means human review is required.
 
-## 5. セキュリティ境界
+## 5. Security boundaries
 
-- API はローカル実行を前提とする。
-- サイト ID とセッション ID は正規表現で検証し、セッション外のファイル公開を防ぐ。
-- 秘密情報はサイト `.env` または実行時シナリオに限定し、結果 JSON に書き出さない。
-- ZAP Docker の API は `127.0.0.1:8090` のみに公開する。
-- アクティブ検査は UI と API の両方で許可確認を要求する。
+- The API is intended for local use.
+- Site IDs and session IDs are regex-validated to prevent file access outside sessions.
+- Secrets are limited to the site `.env` or an in-memory execution scenario and are not written to result JSON.
+- The ZAP Docker API is published only on `127.0.0.1:8090`.
+- Active scans require authorization confirmation in both UI and API.
 
-## 6. 既知の制約
+## 6. Known limitations
 
-- 自動巡回だけで SPA、SSO、多段ウィザード、権限別画面を完全に網羅することはできない。シナリオを併用する。
-- ZAP Alert とケースの対応は URL と `X-Web-Security-Case-Id` を含む履歴に基づく。サーバー側のリダイレクト等では一意に結び付かない場合がある。
-- SAST は軽量なルールベース検査であり、データフロー解析や依存関係 CVE 検査の代替ではない。
+- Crawling alone cannot fully cover SPAs, SSO, multi-step wizards, or permission-specific screens; use scenarios as well.
+- Alert-to-case matching relies on URL and ZAP history containing `X-Web-Security-Case-Id`; redirects can prevent a unique match.
+- SAST is a lightweight rule-based scan, not a replacement for data-flow analysis or dependency CVE scanning.

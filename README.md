@@ -1,18 +1,18 @@
-# Web Security Hub — 日本語
+# Web Security Hub — English
 
-[English README](README.en.md)
+[日本語の README](README.ja.md)
 
-OWASP のリスク分類を基準にした、ローカル実行の Web セキュリティ診断・フォーム回帰テストツールです。Claude CLI と Claude Code 連携は含みません。テストケースの値生成はルールベースで行います。
+Web Security Hub is a locally run web-security assessment and form-regression testing tool aligned with OWASP risk categories. It does not include Claude CLI or Claude Code integration. Test-case values are generated using deterministic, rule-based logic.
 
-## ドキュメント
+## Documentation
 
-- [利用マニュアル](docs/USER_MANUAL.md)
-- [設計書](docs/ARCHITECTURE.md)
-- [機能仕様書](docs/SPECIFICATION.md)
-- [運用・安全管理手順](docs/OPERATIONS.md)
-- [多言語対応ガイド](docs/LOCALIZATION.md)
+- [User manual](docs/USER_MANUAL.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Functional specification](docs/SPECIFICATION.md)
+- [Operations and security procedure](docs/OPERATIONS.md)
+- [Localization guide](docs/LOCALIZATION.md)
 
-## 起動
+## Start the application
 
 ```sh
 npm install
@@ -20,40 +20,44 @@ npx playwright install chromium
 npm start
 ```
 
-`http://localhost:4173` を開きます。
+Open `http://localhost:4173`.
 
-## 機能
+## Capabilities
 
-- **ハイブリッド DAST** — Playwright が実ブラウザーで SPA・ログイン後画面・JSON シナリオを巡回し、同一オリジンの通信を収集します。ZAP を有効にすると、その通信を ZAP プロキシへ送って既存の Passive / Active Scan Rules も実行します。診断許可の確認が必須です。
-- **静的解析 (SAST)** — 指定したローカルソースツリーを解析し、動的コード実行、コマンド実行 API、SQL 文字列連結、秘密情報、TLS 検証無効化の兆候を検出します。`node_modules`、`.git`、ビルド成果物は除外します。
-- **フォーム・回帰テストケース作成** — 同じ巡回・ログインシナリオからフォームを発見し、HTML 制約に基づく正常・境界・異常値をペアワイズで組み合わせます。Playwright spec、YAML、HTML レポートを出力します。
+- **Hybrid DAST** — Playwright uses a real browser to crawl SPAs, authenticated pages, and JSON scenarios, and collects same-origin traffic. When ZAP is enabled, the traffic is replayed through the ZAP proxy so its existing Passive and Active Scan Rules can be used. Confirmation that you are authorized to test the target is required.
+- **Static analysis (SAST)** — Scans a selected local source tree for dynamic code execution, command-execution APIs, SQL string concatenation, possible secrets, and disabled TLS verification. `node_modules`, `.git`, and build outputs are excluded.
+- **Form and regression test-case generation** — Discovers forms from the same crawl and authenticated scenarios, then produces pairwise combinations of valid, boundary, and invalid values based on HTML constraints. It exports Playwright specs, YAML, and HTML reports.
 
-各検出結果には重要度、OWASP 分類、根拠、修正案を表示します。自動検出はレビューの補助であり、脆弱性の確定や安全性の保証ではありません。
+Every finding includes severity, an OWASP category, evidence, and remediation guidance. Automated findings support human review; they do not prove a vulnerability or guarantee security.
 
-CLI で許可済みの対象をパッシブ診断する場合:
+To passively assess an authorized target from the CLI:
 
 ```sh
 npm run dynamic-scan -- https://staging.example.com/
 ```
 
-## ZAP との統合
+## ZAP integration
 
-ZAP は本ツールが再実装しない成熟した検査エンジンです。本ツールは Playwright による認証済み探索・シナリオ再生を担当し、ZAP は収集済み通信への既存ルールによる検査を担当します。
+ZAP remains the mature scan engine rather than being reimplemented here. This application handles authenticated exploration and scenario replay with Playwright; ZAP evaluates the collected traffic with its established rules.
 
-ローカル ZAP を起動します（API は localhost にだけ公開されます）。
+Start local ZAP (its API is exposed only on localhost):
 
 ```sh
 docker compose -f docker-compose.zap.yml up -d
 ```
 
-画面で「ZAP の既存ルールで検査する」を選び、接続確認後に診断します。アクティブ検査は明示的な許可を得たステージング環境にのみ実行してください。終了時は `docker compose -f docker-compose.zap.yml down` を実行します。
+In the interface, select **Scan with ZAP rules**, verify connectivity, then run the assessment. Run active scans only on a staging environment for which you have explicit authorization. Stop ZAP when finished:
 
-`scenarioJson` にはログイン情報と `goto` / `click` / `fill` / `check` / `select` / `wait` ステップを渡せます。情報は保存せず、スキャン結果にも含めません。
+```sh
+docker compose -f docker-compose.zap.yml down
+```
 
-## テストケースと脆弱性診断の併用
+`scenarioJson` accepts login data and `goto`, `click`, `fill`, `check`, `select`, and `wait` steps. This data is not persisted or included in scan results.
 
-「テストケース作成」タブは、動的診断タブと同じ開始 URL・認証・シナリオを使用します。まず業務フローをシナリオ化してフォームの正常／境界／異常系を生成し、その後に同じフローを Playwright＋ZAP で巡回すると、画面から到達できない機能も回帰テストと脆弱性検査の両方に含められます。
+## Combining test cases and vulnerability assessments
 
-## 安全な運用
+The **Test Case Generation** tab uses the same start URL, authentication, and scenario as the dynamic-assessment tab. First model a business flow as a scenario and generate normal, boundary, and invalid form tests. Then crawl the same flow with Playwright and ZAP. This brings functionality that cannot be reached through ordinary navigation into both regression tests and security assessment.
 
-診断対象は必ず自組織または明示的に許可を得た環境に限定してください。パッシブ診断はフォーム送信や侵入試行を行いませんが、テストケース実行と ZAP Active Scan は対象へリクエストを送信します。認証回避や DoS を目的とした検査は含みません。本番環境で実行する前に、ステージング環境で巡回範囲とページ数を小さく設定して影響を確認してください。
+## Safe operation
+
+Limit all targets to systems you own or environments for which you have explicit authorization. Passive assessment does not submit forms or attempt intrusion. Test-case execution and ZAP Active Scan do send requests to the target. The product does not include authentication-bypass or denial-of-service testing. Before testing production, validate impact with a small crawl scope and page limit in staging.

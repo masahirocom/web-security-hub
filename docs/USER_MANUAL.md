@@ -1,87 +1,90 @@
-# Web Security Hub 利用マニュアル
+# Web Security Hub User Manual
 
-## 1. 目的
+[日本語版](ja/USER_MANUAL.md)
 
-Web Security Hub は、フォーム回帰テストと Web アプリケーション脆弱性診断を同じ対象サイト・認証設定・テストシナリオで実行するローカルツールです。Claude CLI は使用しません。
+## 1. Purpose
 
-主な用途は次のとおりです。
+Web Security Hub is a local tool that uses one target site, authentication configuration, and test scenario for both form regression tests and web application security assessment. It does not use Claude CLI.
 
-- HTML フォームを巡回し、正常・境界・異常値を含むテストケースを生成する。
-- 生成した Playwright テストを再実行し、画面差分を確認する。
-- Playwright で到達した画面・通信を ZAP に渡し、既存の脆弱性検査ルールで診断する。
-- ローカルソースを静的解析する。
+Main uses:
 
-## 2. 起動
+- Crawl HTML forms and generate normal, boundary, and invalid test cases.
+- Replay generated Playwright tests and compare visual output.
+- Send pages and traffic reached by Playwright to ZAP for assessment with its existing rules.
+- Perform static analysis of local source code.
+
+## 2. Start
 
 ```sh
 npm install
+npx playwright install chromium
 npm start
 ```
 
-ブラウザーで `http://localhost:4173` を開きます。`EADDRINUSE` が出る場合は、既に起動済みのため同じ URL を開くか、既存サーバーを停止してから再起動します。
+Open `http://localhost:4173`. If `EADDRINUSE` appears, use that URL because a server is already running, or stop the existing server before restarting.
 
-ZAP 統合を使う場合は別途起動します。
+Start ZAP separately when using the integration:
 
 ```sh
 docker compose -f docker-compose.zap.yml up -d
 ```
 
-初回はコンテナイメージの取得に時間がかかります。終了時は次を実行します。
+The first run can take time while the container image downloads. Stop it when finished:
 
 ```sh
 docker compose -f docker-compose.zap.yml down
 ```
 
-## 3. サイト管理
+## 3. Site management
 
-1. **サイト管理**タブでサイト ID、表示名、起点 URL を入力します。
-2. 巡回の最大深さ、最大ページ数、フォームあたりの最大ケース数を設定します。
-3. ログインが必要なら URL、入力欄セレクタ、送信ボタンセレクタ、認証情報を設定します。
-4. 保存します。
+1. On the **Site Management** tab, enter a site ID, display name, and start URL.
+2. Set maximum crawl depth, maximum pages, and maximum cases per form.
+3. For login, configure the URL, input selectors, submit selector, and credentials.
+4. Save the site.
 
-認証情報は `sites/<siteId>/.env` に保存され、画面には再表示されません。テスト専用アカウントを使用してください。
+Credentials are stored in `sites/<siteId>/.env` and are never displayed again. Use a dedicated test account.
 
-## 4. テストケース作成
+## 4. Generate test cases
 
-**テストケース作成**タブで「パイプラインを実行」を選びます。
+On **Test Case Generation**, select **Run Pipeline**.
 
-処理内容は、サイト巡回、フォーム抽出、HTML 制約に基づく候補値の作成、ペアワイズ組合せ、Playwright spec の生成です。作成される成果物はサイトごとの `.golden-master/session-<日時>/` に保存されます。
+The pipeline crawls the site, extracts forms, creates candidate values from HTML constraints, builds pairwise combinations, and generates a Playwright spec. Artifacts are stored at `.golden-master/session-<timestamp>/` for each site.
 
-| 成果物 | 内容 |
+| Artifact | Contents |
 |---|---|
-| `forms.json` | 発見したフォーム・フィールド・制約 |
-| `test-cases.json` | 生成ケース |
-| `test-cases.yaml` | 人手編集可能なケース定義 |
-| `generated.spec.ts` | Playwright の再実行用 spec |
-| `report.html` / `report.md` | テスト生成・実行レポート |
+| `forms.json` | Discovered forms, fields, and constraints |
+| `test-cases.json` | Generated cases |
+| `test-cases.yaml` | Editable case definition |
+| `generated.spec.ts` | Spec for Playwright replay |
+| `report.html` / `report.md` | Test-generation and execution report |
 
-生成値はルールベースです。HTML の `required`、`min`、`max`、`maxlength`、`pattern`、フィールド型、ラベル等を利用し、正常・境界・異常値を作ります。
+Values are rule-based. `required`, `min`, `max`, `maxlength`, `pattern`, field type, labels, and related HTML attributes produce normal, boundary, and invalid values.
 
-## 5. テストケースの編集・再実行
+## 5. Edit and replay test cases
 
-1. **再実行**タブでセッションを選択します。
-2. 「読み込む」で YAML のケースを表形式で開きます。
-3. 必要な入力値を修正し、「保存して再生成」を選びます。
-4. 初回は「ベースラインを記録」、以後は「再実行（比較）」を選びます。
+1. On **Replay**, select a session.
+2. Select **Load** to open YAML cases in the table.
+3. Update values as needed and select **Save and Regenerate**.
+4. First select **Record Baseline**; on subsequent runs select **Replay and Compare**.
 
-比較先 URL を入力すると、同じ spec を別環境に対して実行できます。
+Enter a comparison URL to run the same spec against a different environment.
 
-## 6. ZAP とテストケースを結合する
+## 6. Combine ZAP and test cases
 
-1. ZAP を起動し、**動的脆弱性診断**タブの「ZAP 接続を確認」で接続できることを確認します。
-2. **再実行**タブで「このテストケース実行の全通信を ZAP に送る」を有効にします。
-3. 回帰テストを実行します。
-4. ZAP の Alert はセッションの `zap-alerts.json` に保存されます。Alert に紐付けられる場合は `testCaseIds` にテストケース ID が入ります。
+1. Start ZAP and verify connectivity with **Check ZAP Connection** on **Dynamic Security Scan**.
+2. On **Replay**, enable **Send all traffic from this test-case run to ZAP**.
+3. Run the regression test.
+4. ZAP alerts are written to the session's `zap-alerts.json`. When correlation is available, `testCaseIds` contains the relevant test-case ID.
 
-「ZAP アクティブ検査も実行する」は、明示的な許可を得たステージング環境だけで使用してください。許可確認チェックなしには実行できません。
+Use **Also run ZAP Active Scan** only on explicitly authorized staging. It cannot run without the authorization checkbox.
 
-既存セッションを ZAP 統合で使う場合、先に「テストケースを編集」から保存して spec を再生成してください。
+To use an existing session with ZAP integration, first save it from **Edit Test Cases** to regenerate the spec.
 
-## 7. 動的脆弱性診断
+## 7. Dynamic security assessment
 
-開始 URL、巡回範囲、必要なら認証・シナリオ JSON を設定して実行します。パッシブ診断では HTTPS、セキュリティヘッダー、Cookie 属性、Mixed Content、フォーム構成を確認します。ZAP を有効にすると、ZAP の Passive / Active Scan Rules も利用できます。
+Set a start URL, crawl scope, and, where needed, authentication and scenario JSON. Passive assessment checks HTTPS, security headers, cookie attributes, mixed content, and form construction. Enabling ZAP also makes ZAP Passive and Active Scan Rules available.
 
-シナリオ JSON の例:
+Example scenario JSON:
 
 ```json
 {
@@ -100,16 +103,16 @@ docker compose -f docker-compose.zap.yml down
 }
 ```
 
-利用可能なアクションは `goto`、`click`、`fill`、`check`、`select`、`wait` です。認証情報やシナリオ本文は保存されず、診断結果にも含めません。
+Available actions are `goto`, `click`, `fill`, `check`, `select`, and `wait`. Credentials and scenario content are neither persisted nor included in assessment results.
 
-## 8. 静的解析
+## 8. Static analysis
 
-**静的解析**タブでローカルソースの絶対パスを指定します。`node_modules`、`.git`、`dist`、`build`、`coverage` は除外されます。現時点では動的コード実行、コマンド実行 API、SQL 文字列連結、秘密情報形式、TLS 検証無効化を検出します。
+On **Static Analysis**, enter the absolute path to local source code. `node_modules`, `.git`, `dist`, `build`, and `coverage` are excluded. Current rules detect dynamic code execution, command-execution APIs, SQL string concatenation, possible secrets, and disabled TLS verification.
 
-## 9. 安全な運用
+## 9. Safe operation
 
-- 自組織または書面で許可を受けた対象だけを診断してください。
-- アクティブ検査は本番環境ではなく、テストデータだけを含むステージング環境で実行してください。
-- 削除、解約、退会、決済など不可逆な導線は巡回範囲から外してください。
-- 認証用アカウントには最小権限を与え、個人情報を持たせないでください。
-- 検出結果は人が確認してからチケット化・修正判断してください。
+- Assess only systems you own or have written authorization to test.
+- Run active checks against staging containing only test data, not production.
+- Exclude irreversible paths such as deletion, cancellation, account closure, and payment.
+- Give authentication accounts least privilege and no personal data.
+- Have a person validate findings before creating tickets or deciding on remediation.
