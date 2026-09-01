@@ -115,6 +115,8 @@ Available actions are `goto`, `click`, `fill`, `check`, `select`, and `wait`. Cr
 
 On **Static Analysis**, enter the absolute path to local source code. `node_modules`, `.git`, `dist`, `build`, and `coverage` are excluded. Current rules detect dynamic code execution, command-execution APIs, SQL string concatenation, possible secrets, and disabled TLS verification.
 
+Each run is saved locally under `artifacts/static-scans/<run-id>/`. The interface provides links to JSON, HTML, Markdown, and SARIF reports. A report records the source directory, execution time, file count, severity summary, and findings; it can therefore be retained as scan evidence or imported by SARIF-compatible tools. The `artifacts/` directory is ignored by Git.
+
 ### Optional AI review with Claude Code
 
 After a static-analysis run, the **AI Review with Claude Code** section can request a local Claude Code review. It is optional and requires Claude Code to be installed and logged in with the user's own subscription. Before every review, explicitly authorize sending the displayed SAST result.

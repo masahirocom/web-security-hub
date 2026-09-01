@@ -114,6 +114,8 @@ docker compose -f docker-compose.zap.yml down
 
 **静的解析**タブでローカルソースの絶対パスを指定します。`node_modules`、`.git`、`dist`、`build`、`coverage` は除外されます。現時点では動的コード実行、コマンド実行 API、SQL 文字列連結、秘密情報形式、TLS 検証無効化を検出します。
 
+各実行はローカルの `artifacts/static-scans/<run-id>/` に保存されます。画面から JSON、HTML、Markdown、SARIF レポートを開けます。レポートにはソースディレクトリ、実行時刻、解析ファイル数、重要度集計、検出結果を記録するため、診断証跡として保管したり、SARIF 対応ツールへ取り込んだりできます。`artifacts/` は Git の管理対象外です。
+
 ### Claude Code による任意の AI レビュー
 
 静的解析の実行後、**Claude Code による AI レビュー**からローカルの Claude Code にレビューを依頼できます。この機能は任意であり、利用者自身の契約で Claude Code をインストールしてログインしている必要があります。レビューのたびに、表示中の SAST 結果を送信する明示的な許可を確認します。

@@ -12,7 +12,7 @@
 | F-04 | 回帰再実行 | セッション、比較先 URL | Playwright結果、比較レポート |
 | F-05 | DAST | URL、範囲、シナリオ、許可確認 | DAST findings |
 | F-06 | ZAP 統合 | ZAP API/Proxy、Active Scan許可 | `zap-alerts.json` |
-| F-07 | SAST | ローカルソースディレクトリ | SAST findings |
+| F-07 | SAST | ローカルソースディレクトリ | SAST findings、JSON / HTML / Markdown / SARIF レポート |
 
 ## 2. API 仕様
 
@@ -49,4 +49,4 @@
 - 同じセッションをベースライン記録・比較実行できる。
 - DAST は許可確認なしに開始できない。
 - ZAP 統合実行は `zap-alerts.json` を保存し、該当するケース ID を含められる。
-- 静的解析は対象ディレクトリ外へ書き込まない。
+- 静的解析は `artifacts/static-scans/` 配下だけに JSON / HTML / Markdown / SARIF レポートを保存し、対象ソースディレクトリへは書き込まない。
