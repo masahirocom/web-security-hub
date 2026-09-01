@@ -61,3 +61,9 @@ The **Test Case Generation** tab uses the same start URL, authentication, and sc
 ## Safe operation
 
 Limit all targets to systems you own or environments for which you have explicit authorization. Passive assessment does not submit forms or attempt intrusion. Test-case execution and ZAP Active Scan do send requests to the target. The product does not include authentication-bypass or denial-of-service testing. Before testing production, validate impact with a small crawl scope and page limit in staging.
+
+## License and copyright
+
+Copyright 2024–2026 Masahiro NAKATSUGAWA.
+
+Web Security Hub is distributed under the [Apache License 2.0](LICENSE). See [NOTICE](NOTICE) for copyright and attribution information.

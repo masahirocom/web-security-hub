@@ -2,6 +2,7 @@
   "name": "web-security-hub",
   "version": "1.0.0",
   "private": true,
+  "license": "Apache-2.0",
   "description": "Web Security Hub — OWASP-aligned dynamic web scanning and local static analysis.",
   "engines": {
     "node": ">=22"

@@ -57,3 +57,9 @@ docker compose -f docker-compose.zap.yml up -d
 ## 安全な運用
 
 診断対象は必ず自組織または明示的に許可を得た環境に限定してください。パッシブ診断はフォーム送信や侵入試行を行いませんが、テストケース実行と ZAP Active Scan は対象へリクエストを送信します。認証回避や DoS を目的とした検査は含みません。本番環境で実行する前に、ステージング環境で巡回範囲とページ数を小さく設定して影響を確認してください。
+
+## ライセンスと著作権
+
+Copyright 2024–2026 Masahiro NAKATSUGAWA.
+
+Web Security Hub は [Apache License 2.0](LICENSE) の下で配布します。著作権および帰属情報は [NOTICE](NOTICE) を参照してください。
