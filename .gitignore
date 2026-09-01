@@ -10,3 +10,6 @@ sites/*/.golden-master/
 sites/*/fixtures/
 !sites/_template/
 !sites/_template/**
+
+# ローカルで検討する将来計画（公開しない）
+ROADMAP.md
