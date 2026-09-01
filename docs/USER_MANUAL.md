@@ -4,7 +4,7 @@
 
 ## 1. Purpose
 
-Web Security Hub is a local tool that uses one target site, authentication configuration, and test scenario for both form regression tests and web application security assessment. It does not use Claude CLI.
+Web Security Hub is a local tool that uses one target site, authentication configuration, and test scenario for both form regression tests and web application security assessment. Test-case generation and scanning remain deterministic; Claude Code is available only as an optional post-scan SAST review.
 
 Main uses:
 
@@ -114,6 +114,14 @@ Available actions are `goto`, `click`, `fill`, `check`, `select`, and `wait`. Cr
 ## 8. Static analysis
 
 On **Static Analysis**, enter the absolute path to local source code. `node_modules`, `.git`, `dist`, `build`, and `coverage` are excluded. Current rules detect dynamic code execution, command-execution APIs, SQL string concatenation, possible secrets, and disabled TLS verification.
+
+### Optional AI review with Claude Code
+
+After a static-analysis run, the **AI Review with Claude Code** section can request a local Claude Code review. It is optional and requires Claude Code to be installed and logged in with the user's own subscription. Before every review, explicitly authorize sending the displayed SAST result.
+
+The adapter sends a limited review package containing the SAST summary and finding metadata (rule ID, severity, location, evidence, and remediation). It does not send source text, credentials, or API keys, and it starts Claude Code from a temporary directory rather than the project directory. The response is advisory only; verify every conclusion before treating it as a vulnerability or remediation decision.
+
+If `ANTHROPIC_API_KEY` is present, the adapter removes it from Claude Code's execution environment so that a local Claude subscription login is preferred over API billing.
 
 ## 9. Safe operation
 

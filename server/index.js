@@ -11,6 +11,7 @@ const pipelineRoutes = require('./routes/pipeline');
 const replayRoutes = require('./routes/replay');
 const testCasesRoutes = require('./routes/testCases');
 const reportRoutes = require('./routes/report');
+const aiReviewRoutes = require('./routes/aiReview');
 
 const app = express();
 app.use(express.json({ limit: '5mb' }));
@@ -22,6 +23,7 @@ app.use('/api', pipelineRoutes);
 app.use('/api', replayRoutes);
 app.use('/api', testCasesRoutes);
 app.use('/api', reportRoutes);
+app.use('/api', aiReviewRoutes);
 app.use('/api', systemInfoRoutes);
 app.use('/api', controlRoutes);
 
