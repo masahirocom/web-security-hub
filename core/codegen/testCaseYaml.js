@@ -52,10 +52,11 @@ function regenerateFromYaml(sessionDir) {
     .filter(Boolean);
 
   const catalog = readJson(path.join(sessionDir, 'url-catalog.json'), { visited: [], pages: [] });
-  const login = resolveLoginConfig(sessionDir);
+  const runnerSettings = resolveRunnerSettings(sessionDir);
 
   const code = generatePlaywrightCode(items, {
-    login,
+    login: runnerSettings.login,
+    scenarioSteps: runnerSettings.scenario?.steps,
     visitedUrls: catalog.visited ?? [],
     visitedPages: catalog.pages ?? [],
   });
@@ -65,14 +66,15 @@ function regenerateFromYaml(sessionDir) {
   return out;
 }
 
-function resolveLoginConfig(sessionDir) {
+function resolveRunnerSettings(sessionDir) {
   try {
     // sessionDir = sites/<siteId>/.golden-master/<session>
     const siteId = path.basename(path.resolve(sessionDir, '..', '..'));
     const { buildRunnerConfig } = require('../siteConfig');
-    return buildRunnerConfig(siteId).runnerConfig.login;
+    const config = buildRunnerConfig(siteId).runnerConfig;
+    return { login: config.login, scenario: config.scenario };
   } catch {
-    return undefined;
+    return {};
   }
 }
 

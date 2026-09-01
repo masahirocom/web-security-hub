@@ -44,6 +44,12 @@ docker compose -f docker-compose.zap.yml down
 
 Credentials are stored in `sites/<siteId>/.env` and are never displayed again. Use a dedicated test account.
 
+### Saved scenarios
+
+Use **Saved Scenario** to store a JSON object containing `steps`. Supported actions are `goto`, `click`, `fill`, `check`, `select`, and `wait`; a scenario can contain up to 50 steps. Do not put credentials in this JSON. Login selectors are saved in Site Management and credentials remain in `.env`.
+
+The saved scenario is used by test-case generation and is embedded in generated Playwright replay specs. In **Dynamic Security Scan**, select **Use the saved scenario for the selected site** to run the same authenticated flow without exposing credentials to the browser UI.
+
 ## 4. Generate test cases
 
 On **Test Case Generation**, select **Run Pipeline**.

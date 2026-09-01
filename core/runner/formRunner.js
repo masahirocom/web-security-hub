@@ -38,7 +38,7 @@ async function runFormGeneration(cfg, store, log) {
       items.push(processed.item); executedCaseCount += processed.execution.executed; okCaseCount += processed.execution.ok; ngCaseCount += processed.execution.ng; runSummaries.push(...processed.execution.summaries);
     }
     const codePath = path.join(cfg.outputDir, 'generated.spec.ts');
-    fs.writeFileSync(codePath, generatePlaywrightCode(items, { login: cfg.login, visitedUrls: visited, visitedPages: pageSnapshots }), 'utf8');
+    fs.writeFileSync(codePath, generatePlaywrightCode(items, { login: cfg.login, scenarioSteps: cfg.scenario?.steps, visitedUrls: visited, visitedPages: pageSnapshots }), 'utf8');
     const formCases = items.reduce((n, item) => n + item.cases.length, 0);
     return { codePath, formCount: items.length, caseCount: formCases + uniquePageCaseCount(pageSnapshots, visited), executedCaseCount, okCaseCount, ngCaseCount, runSummaries };
   } finally { await session.stop(); }

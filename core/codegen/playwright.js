@@ -12,7 +12,7 @@
  * Playwright TypeScript spec file (login helper, per-field-type fill logic,
  * screenshot-based golden-master assertions).
  * @param {FormCodegenItem[]} items
- * @param {{login?: any, visitedUrls?: string[], visitedPages?: any[]}} [options]
+ * @param {{login?: any, scenarioSteps?: any[], visitedUrls?: string[], visitedPages?: any[]}} [options]
  */
 function generatePlaywrightCode(items, options = {}) {
   const visited = Array.from(new Set(options.visitedUrls ?? []));
@@ -38,6 +38,7 @@ if (BASIC_USER) {
 if (WEB_SECURITY_PROXY_URL) {
   test.use({ proxy: { server: WEB_SECURITY_PROXY_URL } });
 }
+${renderScenarioHelper(options.scenarioSteps)}
 ${renderLoginHelper(options.login)}
 ${renderFormReadyHelper()}`;
 
@@ -266,10 +267,34 @@ function renderVisitedPages(snapshots, fallbackUrls) {
   return lines.join('\n');
 }
 
+function renderScenarioHelper(steps) {
+  const safeSteps = Array.isArray(steps) ? steps : [];
+  return `
+const SAVED_SCENARIO_STEPS = ${JSON.stringify(safeSteps)};
+async function runSavedScenario(page) {
+  for (const step of SAVED_SCENARIO_STEPS) {
+    if (step.action === 'goto' && step.url) { const url = new URL(step.url, BASE_URL); await page.goto(BASE_URL + url.pathname + url.search + url.hash, { waitUntil: 'domcontentloaded' }); }
+    else if (step.action === 'click' && step.selector) await page.locator(step.selector).click();
+    else if (step.action === 'fill' && step.selector) await page.locator(step.selector).fill(String(step.value ?? ''));
+    else if (step.action === 'check' && step.selector) await page.locator(step.selector).check();
+    else if (step.action === 'select' && step.selector) await page.locator(step.selector).selectOption(String(step.value ?? ''));
+    else if (step.action === 'wait') await page.waitForTimeout(Math.min(Math.max(Number(step.value) || 500, 0), 10000));
+    await page.waitForLoadState('domcontentloaded', { timeout: 5000 }).catch(() => {});
+  }
+}
+`;
+}
+
 function renderLoginHelper(login) {
   if (!login?.username) {
     return `
 async function gotoWithOptionalLogin(page, path) {
+  if (SAVED_SCENARIO_STEPS.length) {
+    await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
+    await runSavedScenario(page);
+    const targetUrl = BASE_URL + path;
+    if (stripHash(page.url()) === stripHash(targetUrl)) return;
+  }
   await page.goto(BASE_URL + path);
 }
 `;
@@ -290,9 +315,13 @@ const LOGIN_SUBMIT_SELECTOR = process.env.GOLDEN_MASTER_LOGIN_SUBMIT_SELECTOR ??
 
 async function gotoWithOptionalLogin(page, path) {
   const targetUrl = BASE_URL + path;
-  await page.goto(targetUrl, { waitUntil: 'domcontentloaded' });
+  await page.goto(SAVED_SCENARIO_STEPS.length ? BASE_URL : targetUrl, { waitUntil: 'domcontentloaded' });
   await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
   const handled = await loginIfPresent(page);
+  if (SAVED_SCENARIO_STEPS.length) {
+    await runSavedScenario(page);
+    if (stripHash(page.url()) === stripHash(targetUrl)) return;
+  }
   if (handled && stripHash(page.url()) !== stripHash(targetUrl)) {
     await page.goto(targetUrl, { waitUntil: 'domcontentloaded' }).catch(() => {});
     await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
