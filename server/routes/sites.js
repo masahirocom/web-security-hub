@@ -3,6 +3,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const { listSites, readSiteConfig, writeSiteConfig, mergeSiteConfig, writeEnvFile, siteDir } = require('../../core/siteConfig');
+const { normalizeStoredScenario } = require('../../core/scenario/siteScenario');
 
 const router = express.Router();
 
@@ -34,6 +35,7 @@ router.put('/sites/:id', (req, res) => {
     } catch {
       existing = {};
     }
+    if (Object.prototype.hasOwnProperty.call(incoming, 'scenario')) incoming.scenario = normalizeStoredScenario(incoming.scenario);
     const config = mergeSiteConfig(existing, incoming);
     writeSiteConfig(req.params.id, config);
     if (credentials && typeof credentials === 'object') {

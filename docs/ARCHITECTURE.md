@@ -56,7 +56,7 @@ Core Engine
 5. Save cases, forms, and the URL catalog to the session.
 6. Produce `generated.spec.ts`, YAML, and HTML/Markdown reports.
 
-Claude CLI semantic inference is intentionally out of scope. Values are generated deterministically from HTML attributes, field types, and labels.
+Claude Code semantic inference is out of scope for test-case generation. Values are generated deterministically from HTML attributes, field types, and labels. The optional Claude Code adapter is isolated from scanning and test generation, and reviews only an explicitly authorized SAST result package.
 
 ## 4. DAST and ZAP integration flow
 

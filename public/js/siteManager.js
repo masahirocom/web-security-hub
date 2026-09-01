@@ -2,8 +2,18 @@
 import { $ } from './dom.js';
 import { api } from './api.js';
 import { state } from './state.js';
+import { t } from './i18n.js';
 
 /** サイト管理 tab: the site picker in the header, and the site config form. */
+
+function ensureSavedScenarioEditor() {
+  if ($('scenarioStepsJson')) return;
+  const fieldset = document.createElement('fieldset');
+  fieldset.innerHTML = '<legend id="scenarioSaveLegend">保存するシナリオ（任意）</legend><div class="field"><label id="scenarioStepsLabel" for="scenarioStepsJson">シナリオ JSON</label><textarea id="scenarioStepsJson" rows="8" spellcheck="false" placeholder=\'{"steps":[{"action":"click","selector":"a[href="/settings"]"}]}\'></textarea></div><p class="hint" id="scenarioStepsHint">ログイン情報は入力しないでください。認証情報は既存の .env 設定を使用します。</p>';
+  $('saveSiteBtn').before(fieldset);
+}
+
+ensureSavedScenarioEditor();
 
 export async function refreshSiteList(selectId) {
   const { sites } = await api('/sites');
@@ -39,6 +49,8 @@ async function loadSiteIntoForm(siteId) {
   $('passwordSelector').value = config.login?.passwordSelector || '';
   $('submitSelector').value = config.login?.submitSelector || '';
   $('basicAuthEnabled').checked = Boolean(config.basicAuth?.enabled);
+  $('scenarioStepsJson').value = JSON.stringify(config.scenario || { steps: [] }, null, 2);
+  $('targetUrl').value = config.baseUrl || '';
   $('loginUser').value = '';
   $('loginPass').value = '';
   $('basicUser').value = '';
@@ -52,7 +64,7 @@ $('siteSelect').addEventListener('change', async (e) => {
 
 $('newSiteBtn').addEventListener('click', () => {
   state.siteId = null;
-  for (const id of ['siteId', 'displayName', 'baseUrl', 'loginUrl', 'usernameSelector', 'passwordSelector', 'submitSelector', 'loginUser', 'loginPass', 'basicUser', 'basicPass']) {
+  for (const id of ['siteId', 'displayName', 'baseUrl', 'loginUrl', 'usernameSelector', 'passwordSelector', 'submitSelector', 'loginUser', 'loginPass', 'basicUser', 'basicPass', 'scenarioStepsJson']) {
     $(id).value = '';
   }
   $('siteId').disabled = false;
@@ -60,14 +72,21 @@ $('newSiteBtn').addEventListener('click', () => {
   $('maxPages').value = 30;
   $('maxCases').value = 25;
   $('basicAuthEnabled').checked = false;
+  $('scenarioStepsJson').value = '{\n  "steps": []\n}';
 });
 
 $('saveSiteBtn').addEventListener('click', async () => {
   const status = $('saveSiteStatus');
-  status.textContent = '保存中...';
+  status.textContent = t('status.running');
   try {
     const id = $('siteId').value.trim();
     if (!id) throw new Error('サイトIDを入力してください');
+    const scenarioText = $('scenarioStepsJson').value.trim();
+    let scenario;
+    if (scenarioText) {
+      try { scenario = JSON.parse(scenarioText); } catch { throw new Error(t('error.scenarioJson')); }
+      if (!scenario || typeof scenario !== 'object' || Array.isArray(scenario)) throw new Error(t('error.scenarioJson'));
+    }
     const config = {
       displayName: $('displayName').value.trim(),
       baseUrl: $('baseUrl').value.trim(),
@@ -87,6 +106,7 @@ $('saveSiteBtn').addEventListener('click', async () => {
           }
         : undefined,
       basicAuth: { enabled: $('basicAuthEnabled').checked },
+      scenario,
     };
 
     const credentials = {};
@@ -96,13 +116,13 @@ $('saveSiteBtn').addEventListener('click', async () => {
     if ($('basicPass').value) credentials.BASIC_PASS = $('basicPass').value;
 
     await api(`/sites/${id}`, { method: 'PUT', body: JSON.stringify({ ...config, credentials }) });
-    status.textContent = '保存しました';
+    status.textContent = t('status.saved');
     $('loginUser').value = '';
     $('loginPass').value = '';
     $('basicUser').value = '';
     $('basicPass').value = '';
     await refreshSiteList(id);
   } catch (e) {
-    status.textContent = `エラー: ${e.message}`;
+    status.textContent = t('status.error', { message: e.message });
   }
 });

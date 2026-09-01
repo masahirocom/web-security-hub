@@ -12,7 +12,7 @@
 | F-04 | Regression replay | Session, comparison URL | Playwright result, comparison report |
 | F-05 | DAST | URL, scope, scenario, authorization confirmation | DAST findings |
 | F-06 | ZAP integration | ZAP API/proxy, Active Scan authorization | `zap-alerts.json` |
-| F-07 | SAST | Local source directory | SAST findings |
+| F-07 | SAST | Local source directory | SAST findings; JSON, HTML, Markdown, and SARIF reports |
 
 ## 2. API specification
 
@@ -49,4 +49,4 @@
 - The same session can record a baseline and run a comparison replay.
 - DAST cannot start without authorization confirmation.
 - A ZAP-integrated run saves `zap-alerts.json` and can include applicable case IDs.
-- Static analysis does not write outside the target source directory.
+- Static analysis saves JSON, HTML, Markdown, and SARIF reports only under `artifacts/static-scans/` and does not write into the target source directory.
