@@ -8,6 +8,7 @@ OWASP のリスク分類を基準にした、ローカル実行の Web セキュ
 - [設計書](docs/ARCHITECTURE.md)
 - [機能仕様書](docs/SPECIFICATION.md)
 - [運用・安全管理手順](docs/OPERATIONS.md)
+- [多言語対応ガイド](docs/LOCALIZATION.md)
 
 ## 起動
 

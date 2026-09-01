@@ -1,0 +1,22 @@
+'use strict';
+const SUPPORTED = ['ja', 'en', 'fr'];
+let messages = {};
+let locale = 'ja';
+export function t(key, values = {}) { const text = messages[key] || key; return text.replace(/\{(\w+)\}/g, (_, name) => String(values[name] ?? `{${name}}`)); }
+export function getLocale() { return locale; }
+export async function initializeI18n() {
+  const select = document.getElementById('languageSelect');
+  const stored = localStorage.getItem('web-security-hub.locale'); const browser = navigator.language.slice(0, 2); const initial = SUPPORTED.includes(stored) ? stored : SUPPORTED.includes(browser) ? browser : 'en';
+  await setLocale(initial); select.value = locale; select.addEventListener('change', () => setLocale(select.value));
+}
+export async function setLocale(nextLocale) { locale = SUPPORTED.includes(nextLocale) ? nextLocale : 'en'; const response = await fetch(`/i18n/${locale}.json`); if (!response.ok) throw new Error(`Translation file unavailable: ${locale}`); messages = await response.json(); localStorage.setItem('web-security-hub.locale', locale); document.documentElement.lang = locale; document.title = t('app.title'); applyStaticTranslations(); window.dispatchEvent(new CustomEvent('i18nchange', { detail: { locale } })); }
+function setText(selector, key) { const element = document.querySelector(selector); if (element) element.textContent = t(key); }
+function setFieldLabel(id, key) { const element = document.getElementById(id); const label = element?.closest('.field')?.querySelector('label'); if (label) label.textContent = t(key); }
+function setControlLabel(id, key) { const control = document.getElementById(id); const label = control?.closest('label'); if (!label) return; for (const node of [...label.childNodes]) if (node.nodeType === Node.TEXT_NODE) node.remove(); label.append(` ${t(key)}`); }
+function applyStaticTranslations() {
+  setText('h1', 'app.title'); setText('#appSubtitle', 'app.subtitle'); setText('#languageLabel', 'language');
+  [['[data-tab="siteSetup"]','nav.siteSetup'],['[data-tab="testCases"]','nav.testCases'],['[data-tab="replay"]','nav.replay'],['[data-tab="dynamic"]','nav.dynamic'],['[data-tab="static"]','nav.static'],['[data-tab="about"]','nav.about'],['#settingsBtn','settings'],['#newSiteBtn','newSite'],['#saveSiteBtn','save'],['#runPipelineBtn','runPipeline'],['#replayBaselineBtn','recordBaseline'],['#replayRunBtn','replay'],['#loadCaseEditorBtn','load'],['#saveCaseEditorBtn','saveRegenerate'],['#runDynamic','startScan'],['#runStatic','startStatic'],['#checkZap','checkZap'],['#panel-siteSetup h2','heading.site'],['#panel-testCases h2','heading.testCases'],['#panel-replay h2','heading.replay'],['#panel-dynamic h2','heading.dynamic'],['#panel-static h2','heading.static'],['#panel-about h2','heading.about'],['#panel-testCases .hint','help.pipeline'],['#panel-about p','help.about'],['#panel-dynamic .notice-box','notice.authorized']].forEach(([selector, key]) => setText(selector, key));
+  ['siteId','displayName','baseUrl','maxDepth','maxPages','maxCases','loginUrl','usernameSelector','passwordSelector','submitSelector','loginUser','loginPass','basicUser','basicPass','replaySession','replayBaseUrl','sourceDir','targetUrl','securityMaxPages','securityMaxDepth','zapBaseUrl','zapProxyUrl'].forEach((id) => setFieldLabel(id, `label.${id === 'replaySession' ? 'session' : id === 'replayBaseUrl' ? 'compareUrl' : id}`));
+  [['#panel-siteSetup fieldset:nth-of-type(1) legend','legend.basic'],['#panel-siteSetup fieldset:nth-of-type(2) legend','legend.login'],['#panel-siteSetup fieldset:nth-of-type(3) legend','legend.basicAuth'],['#panel-dynamic fieldset:nth-of-type(1) legend','legend.zap'],['#panel-dynamic fieldset:nth-of-type(2) legend','legend.scenario'],['#panel-replay fieldset:nth-of-type(1) legend','legend.zapReplay'],['#panel-replay fieldset:nth-of-type(2) legend','legend.caseEditor']].forEach(([selector,key]) => setText(selector,key));
+  [['basicAuthEnabled','check.basicAuth'],['useZap','check.useZap'],['activeScan','check.active'],['authorized','check.authorized'],['replayUseZap','check.replayZap'],['replayActiveZap','check.replayActive'],['replayZapAuthorized','check.replayAuthorized']].forEach(([id,key]) => setControlLabel(id,key));
+}
