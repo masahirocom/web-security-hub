@@ -15,6 +15,7 @@ Core Engine
   ├─ crawler: Playwright form and link discovery
   ├─ values + combinator: rule-based values and pairwise generation
   ├─ codegen + replay: Playwright spec generation and comparison runs
+  ├─ scenario recorder: visible browser interaction capture
   ├─ security: DAST, SAST, and the ZAP API client
   └─ store + report: session artifacts and reports
           │
@@ -34,6 +35,7 @@ Core Engine
 | DAST facade | `core/security/dynamicScanner.js` | Execution ordering and result aggregation only |
 | DAST browser | `core/security/dynamic/browserCrawler.js` | Same-origin discovery and reached-page records |
 | DAST scenario | `core/security/dynamic/scenarioRunner.js` | Browser actions for login and explicit scenarios |
+| Scenario recorder | `core/scenario/playwrightRecorder.js` | One headed local browser session and safe step normalization |
 | DAST analyzer | `core/security/dynamic/passiveAnalyzer.js` | HTTP-header, DOM, and non-destructive active-notice checks |
 | DAST collector | `core/security/dynamic/requestCollector.js` | Deduplication and collection of browser traffic |
 | ZAP integration | `core/security/zapClient.js` | ZAP JSON API, alert retrieval, and case correlation |
@@ -77,6 +79,7 @@ ZAP alerts contain CWE/WASC data, so they are not mechanically mapped to one OWA
 - The API is intended for local use.
 - Site IDs and session IDs are regex-validated to prevent file access outside sessions.
 - Secrets are limited to the site `.env` or an in-memory execution scenario and are not written to result JSON.
+- The recorder uses server-side login credentials and never returns or stores them; passwords are excluded from captured steps.
 - The ZAP Docker API is published only on `127.0.0.1:8090`.
 - Active scans require authorization confirmation in both UI and API.
 

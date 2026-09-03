@@ -50,6 +50,15 @@ Use **Saved Scenario** to store a JSON object containing `steps`. Supported acti
 
 The saved scenario is used by test-case generation and is embedded in generated Playwright replay specs. In **Dynamic Security Scan**, select **Use the saved scenario for the selected site** to run the same authenticated flow without exposing credentials to the browser UI.
 
+### Record a scenario with Playwright
+
+1. Save and select the site, including any login selectors and test-account credentials.
+2. In **Playwright Interaction Recording**, confirm that you are authorized, then select **Open recording browser**.
+3. A visible Chromium window opens. Follow the permitted application path; the configured login runs first using the server-side `.env` credentials.
+4. Select **Stop recording and copy to scenario**. Review the generated JSON and select **Save** to persist it.
+
+Clicks, selection changes, checks, and direct navigation are recorded. Passwords and fields whose selector indicates credentials, tokens, or secrets are never recorded. Non-password values are recorded only when the opt-in checkbox is selected. Review selectors and remove any personal or sensitive values before saving. The resulting scenario is then available to test generation, replay, and the authenticated DAST flow.
+
 ## 4. Generate test cases
 
 On **Test Case Generation**, select **Run Pipeline**.

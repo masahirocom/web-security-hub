@@ -13,6 +13,7 @@
 | F-05 | DAST | URL、範囲、シナリオ、許可確認 | DAST findings |
 | F-06 | ZAP 統合 | ZAP API/Proxy、Active Scan許可 | `zap-alerts.json` |
 | F-07 | SAST | ローカルソースディレクトリ | SAST findings、JSON / HTML / Markdown / SARIF レポート |
+| F-08 | シナリオ記録 | 保存済みサイト、許可確認 | 確認済みの Playwright 互換シナリオ操作 |
 
 ## 2. API 仕様
 
@@ -25,6 +26,7 @@
 | POST | `/api/security/dynamic-scan` | Playwright DAST |
 | POST | `/api/security/zap-status` | ZAP 到達性確認 |
 | POST | `/api/security/static-scan` | SAST |
+| GET / POST | `/api/scenario-recorder/status`, `/api/scenario-recorder/start`, `/api/scenario-recorder/stop` | ローカル可視 Playwright 記録 |
 
 ### DAST リクエスト
 
@@ -33,6 +35,10 @@
 ### 再実行時の ZAP パラメータ
 
 `zap=1` は Playwright のプロキシを有効化します。`activeZap=1` は ZAP Active Scan を要求し、同時に `authorized=1` が必要です。
+
+### シナリオ記録
+
+`POST /api/scenario-recorder/start` は保存済みの `siteId` と `authorized: true` を必須とします。ローカルで可視 Chromium を 1 セッションだけ起動し、サーバー側認証情報で設定済みログインを実行してから、移植可能なシナリオ操作を記録します。停止時は操作をブラウザー UI に返しますが、ユーザーがサイト設定を保存するまで永続化しません。
 
 ## 3. 非機能要件
 
@@ -50,3 +56,4 @@
 - DAST は許可確認なしに開始できない。
 - ZAP 統合実行は `zap-alerts.json` を保存し、該当するケース ID を含められる。
 - 静的解析は `artifacts/static-scans/` 配下だけに JSON / HTML / Markdown / SARIF レポートを保存し、対象ソースディレクトリへは書き込まない。
+- シナリオ記録には明示的な許可が必要で、パスワードは記録しません。パスワード以外の入力値の記録にも別の明示的選択が必要です。

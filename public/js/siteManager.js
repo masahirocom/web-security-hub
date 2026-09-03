@@ -15,6 +15,62 @@ function ensureSavedScenarioEditor() {
 
 ensureSavedScenarioEditor();
 
+let recorderPoll;
+
+function ensureScenarioRecorder() {
+  if ($('startScenarioRecording')) return;
+  const fieldset = document.createElement('fieldset');
+  fieldset.innerHTML = '<legend id="scenarioRecorderLegend">Playwright 操作記録（任意）</legend><p class="hint" id="scenarioRecorderHelp">可視ブラウザーで行った操作を保存用シナリオに取り込みます。パスワードは記録しません。</p><label><input id="recordingAuthorized" type="checkbox"> <span id="recordingAuthorizedLabel">対象を操作・診断する明示的な許可を得ています</span></label><label><input id="recordingIncludeValues" type="checkbox"> <span id="recordingIncludeValuesLabel">パスワード以外の入力値を記録する</span></label><div class="actions"><button id="startScenarioRecording" type="button">記録用ブラウザーを開く</button><button id="stopScenarioRecording" type="button" disabled>記録を停止してシナリオへ反映</button></div><pre id="scenarioRecordingStatus" class="block"></pre>';
+  $('saveSiteBtn').before(fieldset);
+}
+
+function renderRecorderStatus(data) {
+  const status = $('scenarioRecordingStatus');
+  if (!data?.active) {
+    status.textContent = data?.message || '';
+    $('startScenarioRecording').disabled = false;
+    $('stopScenarioRecording').disabled = true;
+    return;
+  }
+  status.textContent = t('status.recording', { steps: data.stepCount ?? data.steps?.length ?? 0, urls: data.visitedUrls?.length ?? 0 });
+  $('startScenarioRecording').disabled = true;
+  $('stopScenarioRecording').disabled = false;
+}
+
+async function refreshRecorderStatus() {
+  try { renderRecorderStatus(await api('/scenario-recorder/status')); } catch { /* server may be restarting */ }
+}
+
+ensureScenarioRecorder();
+
+$('startScenarioRecording').addEventListener('click', async () => {
+  try {
+    if (!state.siteId) throw new Error(t('error.recorderSite'));
+    if (!$('recordingAuthorized').checked) throw new Error(t('error.recorderAuthorization'));
+    renderRecorderStatus({ active: true, stepCount: 0, visitedUrls: [] });
+    const result = await api('/scenario-recorder/start', {
+      method: 'POST',
+      body: JSON.stringify({ siteId: state.siteId, authorized: true, includeInputValues: $('recordingIncludeValues').checked }),
+    });
+    renderRecorderStatus(result);
+    clearInterval(recorderPoll);
+    recorderPoll = setInterval(refreshRecorderStatus, 1000);
+  } catch (error) {
+    renderRecorderStatus({ active: false, message: t('status.error', { message: error.message }) });
+  }
+});
+
+$('stopScenarioRecording').addEventListener('click', async () => {
+  try {
+    const result = await api('/scenario-recorder/stop', { method: 'POST', body: '{}' });
+    clearInterval(recorderPoll);
+    $('scenarioStepsJson').value = JSON.stringify({ steps: result.steps || [] }, null, 2);
+    renderRecorderStatus({ active: false, message: t('status.recorded', { steps: result.steps?.length || 0 }) });
+  } catch (error) {
+    renderRecorderStatus({ active: false, message: t('status.error', { message: error.message }) });
+  }
+});
+
 export async function refreshSiteList(selectId) {
   const { sites } = await api('/sites');
   const select = $('siteSelect');
