@@ -25,6 +25,7 @@ Open `http://localhost:4173`.
 ## Capabilities
 
 - **Hybrid DAST** — Playwright uses a real browser to crawl SPAs, authenticated pages, and JSON scenarios, and collects same-origin traffic. When ZAP is enabled, the traffic is replayed through the ZAP proxy so its existing Passive and Active Scan Rules can be used. Confirmation that you are authorized to test the target is required.
+- **Playwright scenario recorder** — Opens a local visible browser after configured login and turns authorized interactions into a reviewable saved scenario for test generation, replay, and DAST. Passwords are never recorded; other input values require an explicit opt-in.
 - **Static analysis (SAST)** — Scans a selected local source tree for dynamic code execution, command-execution APIs, SQL string concatenation, possible secrets, and disabled TLS verification. `node_modules`, `.git`, and build outputs are excluded.
 - **Form and regression test-case generation** — Discovers forms from the same crawl and authenticated scenarios, then produces pairwise combinations of valid, boundary, and invalid values based on HTML constraints. It exports Playwright specs, YAML, and HTML reports.
 

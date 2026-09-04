@@ -13,6 +13,7 @@
 | F-05 | DAST | URL, scope, scenario, authorization confirmation | DAST findings |
 | F-06 | ZAP integration | ZAP API/proxy, Active Scan authorization | `zap-alerts.json` |
 | F-07 | SAST | Local source directory | SAST findings; JSON, HTML, Markdown, and SARIF reports |
+| F-08 | Scenario recorder | Saved site, authorization confirmation | Reviewed Playwright-compatible scenario steps |
 
 ## 2. API specification
 
@@ -25,6 +26,7 @@
 | POST | `/api/security/dynamic-scan` | Playwright DAST |
 | POST | `/api/security/zap-status` | Check ZAP reachability |
 | POST | `/api/security/static-scan` | SAST |
+| GET / POST | `/api/scenario-recorder/status`, `/api/scenario-recorder/start`, `/api/scenario-recorder/stop` | Local visible Playwright recording |
 
 ### DAST request
 
@@ -33,6 +35,10 @@
 ### ZAP parameters for replay
 
 `zap=1` enables the Playwright proxy. `activeZap=1` requests ZAP Active Scan and also requires `authorized=1`.
+
+### Scenario recorder
+
+`POST /api/scenario-recorder/start` requires a saved `siteId` and `authorized: true`. It launches one local headed Chromium session, executes configured login with server-side credentials, and records portable scenario actions. Only one recorder session can be active. Stopping returns steps to the browser UI; it does not persist them until the user saves the site configuration.
 
 ## 3. Non-functional requirements
 
@@ -50,3 +56,4 @@
 - DAST cannot start without authorization confirmation.
 - A ZAP-integrated run saves `zap-alerts.json` and can include applicable case IDs.
 - Static analysis saves JSON, HTML, Markdown, and SARIF reports only under `artifacts/static-scans/` and does not write into the target source directory.
+- Scenario recording requires explicit authorization, never records passwords, and requires a separate opt-in for non-password input values.

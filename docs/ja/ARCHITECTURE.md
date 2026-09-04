@@ -15,6 +15,7 @@ Core Engine
   ├─ crawler: Playwright によるフォーム・リンク探索
   ├─ values + combinator: ルールベース値・ペアワイズ生成
   ├─ codegen + replay: Playwright spec と比較実行
+  ├─ scenario recorder: 可視ブラウザーの操作記録
   ├─ security: DAST、SAST、ZAP API クライアント
   └─ store + report: セッション成果物とレポート
           │
@@ -34,6 +35,7 @@ Core Engine
 | DAST facade | `core/security/dynamicScanner.js` | 実行順序・結果集約だけを担当 |
 | DAST browser | `core/security/dynamic/browserCrawler.js` | 同一オリジン探索とページ到達記録 |
 | DAST scenario | `core/security/dynamic/scenarioRunner.js` | ログイン・明示シナリオのブラウザー操作 |
+| Scenario recorder | `core/scenario/playwrightRecorder.js` | ローカル可視ブラウザー 1 セッションと安全な操作正規化 |
 | DAST analyzer | `core/security/dynamic/passiveAnalyzer.js` | HTTP ヘッダー、DOM、非破壊アクティブ通知の検査 |
 | DAST collector | `core/security/dynamic/requestCollector.js` | ブラウザー通信の重複排除・収集 |
 | ZAP 統合 | `core/security/zapClient.js` | ZAP JSON API、Alert取得・ケース紐付け |
@@ -77,6 +79,7 @@ ZAP Alert は CWE/WASC を返すため、単一の OWASP Top 10 カテゴリへ�
 - API はローカル実行を前提とする。
 - サイト ID とセッション ID は正規表現で検証し、セッション外のファイル公開を防ぐ。
 - 秘密情報はサイト `.env` または実行時シナリオに限定し、結果 JSON に書き出さない。
+- レコーダーはサーバー側ログイン認証情報を使用し、記録結果に返却・保存しません。パスワード入力も操作ステップから除外します。
 - ZAP Docker の API は `127.0.0.1:8090` のみに公開する。
 - アクティブ検査は UI と API の両方で許可確認を要求する。
 
